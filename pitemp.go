@@ -82,5 +82,6 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	http.HandleFunc("/", handleRoot)
+	log.Printf("Listening on port %d, and reading from thermal file %q.", cfg.Port, cfg.ThermalFile)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), nil))
 }
