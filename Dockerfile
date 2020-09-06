@@ -13,9 +13,8 @@ RUN curl https://dl.google.com/go/go${go_version}.linux-$(dpkg --print-architect
 
 RUN git clone ${pitemp_src} pitemp
 
-WORKDIR pitemp
-
-RUN ${go} build && \
+RUN cd pitemp && \
+    ${go} build && \
     mv pitemp /usr/local/bin/pitemp
 
 # Final image
