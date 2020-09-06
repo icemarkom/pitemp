@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -23,7 +24,9 @@ type Config struct {
 
 // JSONReturn holds the values for JSON printout.
 type JSONReturn struct {
-	Temperature int `json:"temperature"`
+	Temperature int    `json:"temperature"`
+	Requestor   string `json:"requestor"`
+	ServerTime  string `json:"time"`
 }
 
 var cfg Config
@@ -64,6 +67,8 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
+	j.Requestor = r.RemoteAddr
+	j.ServerTime = time.Now().Format("2006-01-02 15:04:05")
 	jr, err := json.Marshal(j)
 	if err != nil {
 		log.Printf("Could not generate JSON response: %v", err)
@@ -71,6 +76,7 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Fprintln(w, string(jr))
+	log.Printf("request from: %s, reported temperature %d", r.RemoteAddr, j.Temperature)
 }
 
 func main() {
