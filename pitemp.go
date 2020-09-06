@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -18,6 +19,11 @@ const (
 type Config struct {
 	ThermalFile string
 	Port        int
+}
+
+// JSONReturn holds the values for JSON printout.
+type JSONReturn struct {
+	Temperature int `json:"temperature"`
 }
 
 var cfg Config
@@ -43,16 +49,29 @@ func readTemperature() (int, error) {
 }
 
 func handleRoot(w http.ResponseWriter, r *http.Request) {
+	var (
+		j   JSONReturn
+		err error
+	)
+
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
 		return
 	}
-	t, err := readTemperature()
+	j.Temperature, err = readTemperature()
 	if err != nil {
 		log.Printf("Could not read temperature: %v.\n", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
 	}
-	fmt.Fprintln(w, t)
+	jr, err := json.Marshal(j)
+	if err != nil {
+		log.Printf("Could not generate JSON response: %v", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	log.Print(jr)
+	fmt.Fprintln(w, string(jr))
 }
 
 func main() {
