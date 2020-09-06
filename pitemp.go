@@ -77,7 +77,7 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Fprintln(w, string(jr))
-	log.Printf("request from: %s, reported temperature %d", r.RemoteAddr, j.Temperature)
+	log.Printf("Request from: %s, reported temperature %d.", r.RemoteAddr, j.Temperature)
 }
 
 func main() {
