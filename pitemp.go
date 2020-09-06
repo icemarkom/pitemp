@@ -48,7 +48,8 @@ func readTemperature() (int, error) {
 	if err != nil {
 		return 0, fmt.Errorf("error obtaining temperature from the thermal file %q: %w", cfg.ThermalFile, err)
 	}
-	return t, nil
+	// Temperature is stored in millidegrees Celsius. We are OK with a rounded number.
+	return t / 1000, nil
 }
 
 func handleRoot(w http.ResponseWriter, r *http.Request) {
