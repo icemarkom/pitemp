@@ -2,16 +2,17 @@ FROM debian:latest AS pitemp-builder
 
 ARG go_version="1.15.1"
 ARG go="/usr/local/go/bin/go"
-ARG pitemp_src="https://github.com/icemarkom/pitemp.git"
 
 # Builder image
 RUN apt-get update && \
-    apt-get install -y git curl
+    apt-get install -y curl
 
 RUN curl https://dl.google.com/go/go${go_version}.linux-$(dpkg --print-architecture).tar.gz \
     | tar xz -C /usr/local
 
-RUN git clone ${pitemp_src} pitemp
+RUN mkdir pitemp
+
+COPY *.go pitemp
 
 RUN cd pitemp && \
     ${go} build && \
