@@ -4,6 +4,8 @@ services:
   pitemp:
     container_name: pitemp
     image: icemarkom/pitemp:latest
+    command:
+      --port=9550
     ports:
       - 9550:9550
     networks:
