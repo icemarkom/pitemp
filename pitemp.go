@@ -70,7 +70,6 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	log.Print(jr)
 	fmt.Fprintln(w, string(jr))
 }
 
