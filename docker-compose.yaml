@@ -4,7 +4,12 @@ services:
   pitemp:
     container_name: pitemp
     image: icemarkom/pitemp:latest
+    volumes:
+      - type: bind
+        source: /sys/devices/virtual/thermal/thermal_zone0/temp
+        target: /thermal_source
     command:
+      --thermal=/thermal_source
       --port=9550
     ports:
       - 9550:9550
