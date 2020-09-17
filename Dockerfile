@@ -5,8 +5,8 @@ ARG go_command="/usr/local/go/bin/go"
 
 # Builder image
 RUN apt-get update && \
-    apt-get install -y curl && \
-    curl https://dl.google.com/go/go${go_version}.linux-$(dpkg --print-architecture).tar.gz \
+    apt-get install -y curl gcc && \
+    curl https://dl.google.com/go/go${go_version}.linux-$(dpkg --print-architecture | sed -e 's/armhf/armv6l/').tar.gz \
     | tar xz -C /usr/local && \
     mkdir pitemp
 
