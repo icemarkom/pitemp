@@ -1,12 +1,11 @@
 FROM debian:latest AS pitemp-builder
 
-ARG go_version="1.15.2"
 ARG go_command="/usr/local/go/bin/go"
 
 # Builder image
 RUN apt-get update && \
     apt-get install -y curl gcc && \
-    curl https://dl.google.com/go/go${go_version}.linux-$(dpkg --print-architecture | sed -e 's/armhf/armv6l/').tar.gz \
+    curl https://dl.google.com/go/$(curl -s "https://golang.org/VERSION?m=text").linux-$(dpkg --print-architecture | sed -e 's/armhf/armv6l/').tar.gz \
     | tar xz -C /usr/local && \
     mkdir pitemp
 
