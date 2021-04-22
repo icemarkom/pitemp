@@ -20,6 +20,7 @@ const (
 type Config struct {
 	ThermalFile string
 	Port        int
+	F           bool
 }
 
 // JSONReturn holds the values for JSON printout.
@@ -33,6 +34,7 @@ var cfg Config
 
 func init() {
 	flag.StringVar(&cfg.ThermalFile, "thermal", defaultThermalFile, "Default file containing temperature in millidegrees Celsius")
+	flag.BoolVar(&cfg.F, "fahrenheit", false, "Report temperature in degrees Fahrenheit")
 	flag.IntVar(&cfg.Port, "port", 9550, "Port to run on")
 	flag.Parse()
 
@@ -52,6 +54,10 @@ func readTemperature() (int, error) {
 	return t / 1000, nil
 }
 
+func toFahrenheit(tC int) int {
+	return (tC*9/5 + 32)
+}
+
 func handleRoot(w http.ResponseWriter, r *http.Request) {
 	var (
 		j   JSONReturn
@@ -68,6 +74,9 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
+	if cfg.F {
+		j.Temperature = toFahrenheit(j.Temperature)
+	}
 	j.Requestor = r.RemoteAddr
 	j.ServerTime = time.Now().Format("2006-01-02 15:04:05")
 	jr, err := json.Marshal(j)
@@ -82,6 +91,6 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	http.HandleFunc("/", handleRoot)
-	log.Printf("Listening on port %d, and reading from thermal file %q.", cfg.Port, cfg.ThermalFile)
+	log.Printf("Listening on port %d, and reading from thermal file %q. Report in Fahrenheit: %v.", cfg.Port, cfg.ThermalFile, cfg.F)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), nil))
 }
