@@ -12,6 +12,13 @@ import (
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
+// MQTTConfig stores the MQTT-related config.
+type MQTTConfig struct {
+	Enabled, SSL                                                     bool
+	Broker, Name, Password, Topic, TopicConfig, TopicState, Username string
+	Interval, Port                                                   int
+}
+
 // MQTTDevice describes sensor for Home Assistant.
 type MQTTDevice struct {
 	Name          string `json:"name"`
@@ -84,16 +91,15 @@ func doMQTT(wg *sync.WaitGroup) {
 	log.Printf("MQTT enabled (broker: %q, port %d, SSL: %v, username: %q, topic prefix: %q.",
 		cfg.MQTT.Broker, cfg.MQTT.Port, cfg.MQTT.SSL, cfg.MQTT.Username, cfg.MQTT.Topic)
 
-	// topic := fmt.Sprintf("/test%s", cfg.MQTT.Topic)
-	topic_config := fmt.Sprintf("%s/config", cfg.MQTT.Topic)
-	topic_state := fmt.Sprintf("%s/state", cfg.MQTT.Topic)
+	cfg.MQTT.TopicConfig = fmt.Sprintf("%s/config", cfg.MQTT.Topic)
+	cfg.MQTT.TopicState = fmt.Sprintf("%s/state", cfg.MQTT.Topic)
 
 	d := MQTTDevice{
 		Name:          fmt.Sprintf("%s_temperature", cfg.MQTT.Name),
 		DeviceClass:   "temperature",
 		Unit:          fmt.Sprintf("%s%s", cfg.UnitPrefix, cfg.Unit),
 		ValueTemplate: "{{ value_json.temperature | round(1) }}",
-		StateTopic:    topic_state,
+		StateTopic:    cfg.MQTT.TopicState,
 		UniqueID:      fmt.Sprintf("%s_temperature", cfg.MQTT.Name),
 	}
 
@@ -114,15 +120,15 @@ func doMQTT(wg *sync.WaitGroup) {
 			loopWait()
 			continue
 		}
-		if token := c.Publish(topic_config, 0, false, dr); token.Wait() && token.Error() != nil {
+		if token := c.Publish(cfg.MQTT.TopicConfig, 0, false, dr); token.Wait() && token.Error() != nil {
 			log.Printf("MQTT publish error: %v", token.Error())
 			loopWait()
 			continue
 		}
-		if token := c.Publish(topic_state, 0, false, jr); token.Wait() && token.Error() != nil {
+		if token := c.Publish(cfg.MQTT.TopicState, 0, false, jr); token.Wait() && token.Error() != nil {
 			log.Printf("MQTT publish error: %v", token.Error())
 		}
-		log.Printf("Reported to MQTT broker %q on %q, temperature %.3f %s%s.", cfg.MQTT.Broker, topic_state, t, cfg.UnitPrefix, cfg.Unit)
+		log.Printf("Reported to MQTT broker %q on %q, temperature %.3f %s%s.", cfg.MQTT.Broker, cfg.MQTT.TopicState, t, cfg.UnitPrefix, cfg.Unit)
 		loopWait()
 	}
 }

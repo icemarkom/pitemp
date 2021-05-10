@@ -24,13 +24,6 @@ const (
 	mqtt_client_regex   = `^[A-Za-z0-9_-]+$`
 )
 
-// MQTTConfig stores the MQTT-related config.
-type MQTTConfig struct {
-	Enabled, SSL                            bool
-	Broker, Name, Password, Topic, Username string
-	Interval, Port                          int
-}
-
 // HTTPConfig stores the HTTP-related config.
 type HTTPConfig struct {
 	Enabled bool
