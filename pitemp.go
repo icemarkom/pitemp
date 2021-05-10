@@ -20,6 +20,7 @@ const (
 	defaultMQTTTopic    = `homeassistant/sensor/%s_temperature`
 	defaultHTTPPort     = 9550
 	defaultMQTTPort     = 1883
+	defaultMQTTSSLPort  = 8883
 	defaultMQTTInterval = 30
 	mqtt_client_regex   = `^[A-Za-z0-9_-]+$`
 )
@@ -85,6 +86,16 @@ func validateFlags() error {
 	return nil
 }
 
+func isFlagPassed(fl string) bool {
+	found := false
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == fl {
+			found = true
+		}
+	})
+	return found
+}
+
 func init() {
 	hostname, err := os.Hostname()
 	if err != nil {
@@ -100,7 +111,7 @@ func init() {
 	flag.IntVar(&cfg.HTTP.Port, "http_port", defaultHTTPPort, "HTTP port to listen on")
 	flag.BoolVar(&cfg.MQTT.Enabled, "mqtt", false, "Notify MQTT broker")
 	flag.StringVar(&cfg.MQTT.Broker, "mqtt_broker", "localhost", "MQTT Broker address")
-	flag.IntVar(&cfg.MQTT.Port, "mqtt_port", defaultMQTTPort, "MQTT Broker port")
+	flag.IntVar(&cfg.MQTT.Port, "mqtt_port", defaultMQTTPort, "MQTT Broker port (will use 8883 if SSL is enabled)")
 	flag.BoolVar(&cfg.MQTT.SSL, "mqtt_ssl", false, "MQTT SSL")
 	flag.StringVar(&cfg.MQTT.Name, "mqtt_client", hostname, "MQTT Client Name")
 	flag.StringVar(&cfg.MQTT.Topic, "mqtt_topic", fmt.Sprintf(defaultMQTTTopic, hostname), "MQTT Topic prefix")
@@ -108,6 +119,12 @@ func init() {
 	flag.StringVar(&cfg.MQTT.Username, "mqtt_username", "", "MQTT username")
 	flag.StringVar(&cfg.MQTT.Password, "mqtt_password", "", "MQTT password")
 	flag.Parse()
+
+	if !isFlagPassed("mqtt_port") {
+		if cfg.MQTT.SSL {
+			cfg.MQTT.Port = defaultMQTTSSLPort
+		}
+	}
 
 	if cfg.MQTT.Name != hostname {
 		if cfg.MQTT.Topic == fmt.Sprintf(defaultMQTTTopic, hostname) {
