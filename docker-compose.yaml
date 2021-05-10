@@ -3,14 +3,13 @@ version: "3.8"
 services:
   pitemp:
     container_name: pitemp
-    image: icemarkom/pitemp:latest
+    image: icemarkom/pitemp:armhf
     volumes:
       - type: bind
         source: /root/temperature
         target: /thermal_source
     command:
-      --thermal=/thermal_source
-      --port=9550
+      --thermal_file=/thermal_source
     ports:
       - 9550:9550
     networks:

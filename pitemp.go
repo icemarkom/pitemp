@@ -2,46 +2,151 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
-	"net/http"
+	"os"
+	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
 const (
-	defaultThermalFile = "/sys/devices/virtual/thermal/thermal_zone0/temp"
+	defaultThermalFile  = `/sys/devices/virtual/thermal/thermal_zone0/temp`
+	defaultMQTTTopic    = `homeassistant/sensor/%s_temperature`
+	defaultHTTPPort     = 9550
+	defaultMQTTPort     = 1883
+	defaultMQTTSSLPort  = 8883
+	defaultMQTTInterval = 30
+	mqtt_client_regex   = `^[A-Za-z0-9_-]+$`
 )
+
+// HTTPConfig stores the HTTP-related config.
+type HTTPConfig struct {
+	Enabled bool
+	Port    int
+}
 
 // Config stores the configuration for the program.
 type Config struct {
 	ThermalFile string
-	Port        int
-	F           bool
+	Unit        string
+	UnitPrefix  string
+	HTTP        HTTPConfig
+	MQTT        MQTTConfig
 }
 
 // JSONReturn holds the values for JSON printout.
 type JSONReturn struct {
-	Temperature int    `json:"temperature"`
-	Requestor   string `json:"requestor"`
-	ServerTime  string `json:"time"`
+	Temperature float64 `json:"temperature"`
+	Requestor   string  `json:"requestor"`
+	ServerTime  string  `json:"time"`
 }
 
 var cfg Config
 
+func validateFlags() error {
+	switch cfg.Unit {
+	case "c", "C":
+		cfg.UnitPrefix = "°"
+		cfg.Unit = "C"
+	case "f", "F":
+		cfg.UnitPrefix = "°"
+		cfg.Unit = "F"
+	case "k", "K":
+		cfg.Unit = "K"
+	default:
+		return fmt.Errorf("invalid temperature unit %q", cfg.Unit)
+	}
+
+	// MQTT related checks.
+	if cfg.MQTT.Enabled {
+		// Broken must be specified.
+		if cfg.MQTT.Broker == "" {
+			return errors.New("MQTT broker must be specified")
+		}
+		// Port must be non-zero.
+		if cfg.MQTT.Port == 0 {
+			return errors.New("MQTT broken port must not be 0")
+		}
+		// Client name must be set.
+		if cfg.MQTT.Name == "" {
+			return errors.New("MQTT client name must be specified")
+		}
+		// Client name must only use specific characters.
+		cre := regexp.MustCompile(mqtt_client_regex)
+		if !cre.MatchString(cfg.MQTT.Name) {
+			return fmt.Errorf("%q is an invalid MQTT client name; it should match %q", cfg.MQTT.Name, mqtt_client_regex)
+		}
+	}
+	return nil
+}
+
+func isFlagPassed(fl string) bool {
+	found := false
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == fl {
+			found = true
+		}
+	})
+	return found
+}
+
 func init() {
-	flag.StringVar(&cfg.ThermalFile, "thermal", defaultThermalFile, "Default file containing temperature in millidegrees Celsius")
-	flag.BoolVar(&cfg.F, "fahrenheit", false, "Report temperature in degrees Fahrenheit")
-	flag.IntVar(&cfg.Port, "port", 9550, "Port to run on")
+	hostname, err := os.Hostname()
+	if err != nil {
+		log.Fatalf("Cannot obtain hostname: %v.", err)
+	}
+	hostname = strings.Split(hostname, ".")[0]
+
+	// For now, HTTP is always enabled.
+	cfg.HTTP.Enabled = true
+
+	flag.StringVar(&cfg.ThermalFile, "thermal_file", defaultThermalFile, "Default file containing temperature in millidegrees Celsius")
+	flag.StringVar(&cfg.Unit, "unit", "C", "C or F")
+	flag.IntVar(&cfg.HTTP.Port, "http_port", defaultHTTPPort, "HTTP port to listen on")
+	flag.BoolVar(&cfg.MQTT.Enabled, "mqtt", false, "Notify MQTT broker")
+	flag.StringVar(&cfg.MQTT.Broker, "mqtt_broker", "localhost", "MQTT Broker address")
+	flag.IntVar(&cfg.MQTT.Port, "mqtt_port", defaultMQTTPort, "MQTT Broker port (will use 8883 if SSL is enabled)")
+	flag.BoolVar(&cfg.MQTT.SSL, "mqtt_ssl", false, "MQTT SSL")
+	flag.StringVar(&cfg.MQTT.Name, "mqtt_client", hostname, "MQTT Client Name")
+	flag.StringVar(&cfg.MQTT.Topic, "mqtt_topic", fmt.Sprintf(defaultMQTTTopic, hostname), "MQTT Topic prefix")
+	flag.IntVar(&cfg.MQTT.Interval, "mqtt_interval", defaultMQTTInterval, "MQTT notification interval in seconds")
+	flag.StringVar(&cfg.MQTT.Username, "mqtt_username", "", "MQTT username")
+	flag.StringVar(&cfg.MQTT.Password, "mqtt_password", "", "MQTT password")
 	flag.Parse()
 
+	if !isFlagPassed("mqtt_port") {
+		if cfg.MQTT.SSL {
+			cfg.MQTT.Port = defaultMQTTSSLPort
+		}
+	}
+
+	if cfg.MQTT.Name != hostname {
+		if cfg.MQTT.Topic == fmt.Sprintf(defaultMQTTTopic, hostname) {
+			cfg.MQTT.Topic = fmt.Sprintf(defaultMQTTTopic, cfg.MQTT.Name)
+		}
+	}
+
+	if err = validateFlags(); err != nil {
+		log.Fatalf("Incorrect use of flags: %v.", err)
+	}
+}
+
+func Fahrenheit(t float64) float64 {
+	return (t * 9.0 / 5.0) + 32.0
+}
+
+func Kelvin(t float64) float64 {
+	return t + 273.0
 }
 
 // readTemperature reports temperature from cfg.ThermalFile.
-func readTemperature() (int, error) {
+func readTemperature() (float64, error) {
 	tf, err := ioutil.ReadFile(cfg.ThermalFile)
 	if err != nil {
 		return 0, fmt.Errorf("error reading thermal file %q: %w", cfg.ThermalFile, err)
@@ -51,46 +156,50 @@ func readTemperature() (int, error) {
 		return 0, fmt.Errorf("error obtaining temperature from the thermal file %q: %w", cfg.ThermalFile, err)
 	}
 	// Temperature is stored in millidegrees Celsius. We are OK with a rounded number.
-	return t / 1000, nil
+	rt := float64(t) / 1000.0
+	switch cfg.Unit {
+	case "F":
+		return Fahrenheit(rt), nil
+	case "K":
+		return Kelvin(rt), nil
+	default:
+		return rt, nil
+	}
 }
 
-func toFahrenheit(tC int) int {
-	return (tC*9/5 + 32)
-}
-
-func handleRoot(w http.ResponseWriter, r *http.Request) {
+func JSONResponse(requestor string) (string, float64, error) {
 	var (
 		j   JSONReturn
 		err error
 	)
 
-	if r.URL.Path != "/" {
-		http.NotFound(w, r)
-		return
-	}
+	j.Requestor = requestor
 	j.Temperature, err = readTemperature()
 	if err != nil {
-		log.Printf("Could not read temperature: %v.\n", err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		return "", 0, fmt.Errorf("could not read temperature: %v", err)
 	}
-	if cfg.F {
-		j.Temperature = toFahrenheit(j.Temperature)
-	}
-	j.Requestor = r.RemoteAddr
 	j.ServerTime = time.Now().Format("2006-01-02 15:04:05")
 	jr, err := json.Marshal(j)
 	if err != nil {
-		log.Printf("Could not generate JSON response: %v", err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		return "", 0, fmt.Errorf("could not generate JSON response: %v", err)
 	}
-	fmt.Fprintln(w, string(jr))
-	log.Printf("Request from: %s, reported temperature %d.", r.RemoteAddr, j.Temperature)
+	return string(jr), j.Temperature, nil
 }
 
 func main() {
-	http.HandleFunc("/", handleRoot)
-	log.Printf("Listening on port %d, and reading from thermal file %q. Report in Fahrenheit: %v.", cfg.Port, cfg.ThermalFile, cfg.F)
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), nil))
+	wg := new(sync.WaitGroup)
+
+	log.Printf("Thermal file: %q.", cfg.ThermalFile)
+	// Run our HTTP stuff.
+	if cfg.HTTP.Enabled {
+		wg.Add(1)
+		go doHTTP(wg)
+	}
+
+	// Should we do MQTT?
+	if cfg.MQTT.Enabled {
+		wg.Add(1)
+		go doMQTT(wg)
+	}
+	wg.Wait()
 }
