@@ -3,7 +3,7 @@ version: "3.8"
 services:
   pitemp:
     container_name: pitemp
-    image: icemarkom/pitemp:armhf
+    image: icemarkom/pitemp:latest
     volumes:
       - type: bind
         source: /root/temperature
