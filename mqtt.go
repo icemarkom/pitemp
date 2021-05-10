@@ -28,6 +28,7 @@ func handlerReconnecting(c mqtt.Client, co *mqtt.ClientOptions) {
 
 func handlerOnConnectAttempt(b *url.URL, tc *tls.Config) *tls.Config {
 	log.Println("Attempting to connect to MQTT broker...")
+
 	return tc
 }
 
@@ -37,7 +38,6 @@ func handlerOnConnect(c mqtt.Client) {
 
 func handlerOnConnectionLost(c mqtt.Client, e error) {
 	log.Printf("Connection to MQTT broker unexpectedly lost: %v.", e)
-	c.Disconnect(0)
 }
 
 func mqttClient() (mqtt.Client, error) {
@@ -105,7 +105,6 @@ func doMQTT(wg *sync.WaitGroup) {
 	c, err := mqttClient()
 	for {
 		if !c.IsConnected() || !c.IsConnectionOpen() {
-			c.Connect()
 			loopWait()
 			continue
 		}
