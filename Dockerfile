@@ -1,14 +1,18 @@
-FROM golang:alpine AS pitemp-builder
+FROM --platform=${BUILDPLATFORM} golang:alpine AS builder
 
 # Builder image
 WORKDIR /pitemp
 COPY . .
-RUN GOOS="linux" GOARCH=$(uname -m | sed -e "s/aarch64/arm64/" -e "s/x86_64/amd64/" -e "s/armv7l/arm/") go build
+ARG TARGETOS
+ARG TARGETARCH
+RUN apk --no-cache add ca-certificates
+RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build
 
 # Final image
-FROM alpine:latest
-RUN apk --no-cache add ca-certificates
-#RUN apt-get update && apt-get install --yes ca-certificates
-COPY --from=pitemp-builder /pitemp/pitemp /usr/local/bin/pitemp
-ENTRYPOINT ["/usr/local/bin/pitemp"]
+FROM alpine:latest AS pitemp
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=builder /pitemp/pitemp /
+WORKDIR /
+ENV PATH "/"
+ENTRYPOINT ["pitemp"]
 CMD ["--help"]
