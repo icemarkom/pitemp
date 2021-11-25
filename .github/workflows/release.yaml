@@ -28,11 +28,11 @@ jobs:
           args: release --rm-dist
         env:
           GITHUB_TOKEN: ${{ secrets.TOKEN }}
-      - name: Run dpkg-scanpackages and apt-ftparchive
+      - name: Run apt-ftparchive
+        working-directory: dist
         run: |
-          ln -s dist debian && \
-          apt-ftparchive packages debian/ | gzip > Packages.gz && \
-          apt-ftparchive release . | gzip > Release.gz
+          apt-ftparchive packages . | gzip > ../Packages.gz && \
+          apt-ftparchive release . | gzip > ../Release.gz
       - name: Upload Packages and Release manually
         uses: svenstaro/upload-release-action@v2
         with:
