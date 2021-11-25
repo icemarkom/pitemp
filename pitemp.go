@@ -115,7 +115,7 @@ func init() {
 	flag.BoolVar(&cfg.MQTT.SSL, "mqtt_ssl", false, "MQTT SSL")
 	flag.StringVar(&cfg.MQTT.Name, "mqtt_client", hostname, "MQTT Client Name")
 	flag.StringVar(&cfg.MQTT.Topic, "mqtt_topic", fmt.Sprintf(defaultMQTTTopic, hostname), "MQTT Topic prefix")
-	flag.IntVar(&cfg.MQTT.Interval, "mqtt_interval", defaultMQTTInterval, "MQTT notification interval in seconds")
+	flag.DurationVar(&cfg.MQTT.Interval, "mqtt_interval", defaultMQTTInterval*time.Second, "MQTT notification interval in seconds")
 	flag.StringVar(&cfg.MQTT.Username, "mqtt_username", "", "MQTT username")
 	flag.StringVar(&cfg.MQTT.Password, "mqtt_password", "", "MQTT password")
 	flag.Parse()

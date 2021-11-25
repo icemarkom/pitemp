@@ -16,7 +16,8 @@ import (
 type MQTTConfig struct {
 	Enabled, SSL                                                     bool
 	Broker, Name, Password, Topic, TopicConfig, TopicState, Username string
-	Interval, Port                                                   int
+	Port                                                             int
+	Interval                                                         time.Duration
 }
 
 // MQTTDevice describes sensor for Home Assistant.
@@ -67,7 +68,7 @@ func mqttClient() (mqtt.Client, error) {
 	o.ConnectRetry = true
 	o.AutoReconnect = true
 	o.CleanSession = true
-	o.ConnectRetryInterval = time.Duration(cfg.MQTT.Interval) * time.Second
+	o.ConnectRetryInterval = cfg.MQTT.Interval
 	o.OnConnectAttempt = handlerOnConnectAttempt
 	o.OnConnectionLost = handlerOnConnectionLost
 	o.OnReconnecting = handlerReconnecting
@@ -82,7 +83,7 @@ func mqttClient() (mqtt.Client, error) {
 }
 
 func loopWait() {
-	time.Sleep(time.Duration(cfg.MQTT.Interval) * time.Second)
+	time.Sleep(cfg.MQTT.Interval)
 }
 
 func doMQTT(wg *sync.WaitGroup) {
@@ -109,6 +110,9 @@ func doMQTT(wg *sync.WaitGroup) {
 	}
 
 	c, err := mqttClient()
+	if err != nil {
+		log.Fatalf("Could not create MQTT client: %v", err)
+	}
 	for {
 		if !c.IsConnected() || !c.IsConnectionOpen() {
 			loopWait()
