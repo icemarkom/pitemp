@@ -31,13 +31,13 @@ jobs:
       - name: Run dpkg-scanpackages and apt-ftparchive
         run: |
           ln -s dist debian && \
-          dpkg-scanpackages --multiversion debian | gzip > Packages.gz && \
-          apt-ftparchive release debian | gzip > Release.gz
+          apt-ftparchive packages debian/ > Packages && \
+          apt-ftparchive release . > Release
       - name: Upload Packages and Release manually
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.TOKEN }}
-          file: "*.gz"
+          file: "{Packages|Release}"
           file_glob: true
           tag: ${{ github.ref }}
           overwrite: true
