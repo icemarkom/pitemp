@@ -25,6 +25,8 @@ const (
 	mqtt_client_regex   = `^[A-Za-z0-9_-]+$`
 )
 
+var version, gitCommit string
+
 // HTTPConfig stores the HTTP-related config.
 type HTTPConfig struct {
 	Enabled bool
@@ -96,7 +98,13 @@ func isFlagPassed(fl string) bool {
 	return found
 }
 
+func printVersion(v, g string) {
+	fmt.Printf("Version: %s\n Commit: %s\n", v, g)
+}
+
 func init() {
+	var v bool
+
 	hostname, err := os.Hostname()
 	if err != nil {
 		log.Fatalf("Cannot obtain hostname: %v.", err)
@@ -118,7 +126,13 @@ func init() {
 	flag.DurationVar(&cfg.MQTT.Interval, "mqtt_interval", defaultMQTTInterval*time.Second, "MQTT notification interval in seconds")
 	flag.StringVar(&cfg.MQTT.Username, "mqtt_username", "", "MQTT username")
 	flag.StringVar(&cfg.MQTT.Password, "mqtt_password", "", "MQTT password")
+	flag.BoolVar(&v, "version", false, "Print version")
 	flag.Parse()
+
+	if v {
+		printVersion(version, gitCommit)
+		os.Exit(42)
+	}
 
 	if !isFlagPassed("mqtt_port") {
 		if cfg.MQTT.SSL {
