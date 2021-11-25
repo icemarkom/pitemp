@@ -30,11 +30,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.TOKEN }}
       - name: Run dpkg-scanpackages
         run: |
-          ln -s dist debian && dpkg-scanpackages --multiversion debian  | gzip > Packages.gzip
+          ln -s dist debian && dpkg-scanpackages --multiversion debian  | gzip > Packages.gz
       - name: Upload Packages manually
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.TOKEN }}
-          file: Packages.gzip
+          file: Packages.gz
           tag: ${{ github.ref }}
           overwrite: true
