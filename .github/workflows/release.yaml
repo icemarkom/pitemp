@@ -37,6 +37,6 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.TOKEN }}
-          file_glob: *.gz
+          file_glob: "*.gz"
           tag: ${{ github.ref }}
           overwrite: true
