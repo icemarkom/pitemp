@@ -35,7 +35,7 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.TOKEN }}
-          file: Packages.gz
+          file: Packages.gzip
           asset_name: mything
           tag: ${{ github.ref }}
           overwrite: true
