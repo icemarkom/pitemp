@@ -28,13 +28,15 @@ jobs:
           args: release --rm-dist
         env:
           GITHUB_TOKEN: ${{ secrets.TOKEN }}
-      - name: Run dpkg-scanpackages
+      - name: Run dpkg-scanpackages and apt-ftparchive
         run: |
-          ln -s dist debian && dpkg-scanpackages --multiversion debian  | gzip > Packages.gz
-      - name: Upload Packages manually
+          ln -s dist debian && \
+          dpkg-scanpackages --multiversion debian > Packages && \
+          apt-ftparchive release debian > Release
+      - name: Upload Packages and Release manually
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.TOKEN }}
-          file: Packages.gz
+          file: "{Packages|Release}"
           tag: ${{ github.ref }}
           overwrite: true
