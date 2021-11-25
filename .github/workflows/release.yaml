@@ -31,8 +31,8 @@ jobs:
       - name: Run dpkg-scanpackages and apt-ftparchive
         run: |
           ln -s dist debian && \
-          apt-ftparchive packages debian/ | gzip > Packages && \
-          apt-ftparchive release . | gzip > Release
+          apt-ftparchive packages debian/ | gzip > Packages.gz && \
+          apt-ftparchive release . | gzip > Release.gz
       - name: Upload Packages and Release manually
         uses: svenstaro/upload-release-action@v2
         with:
