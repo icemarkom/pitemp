@@ -29,8 +29,8 @@ jobs:
           distribution: goreleaser
           version: latest
           args: release --rm-dist
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
       - name: Run dpkg-scanpackages
         run: |
           ln -s dist debian && dpkg-scanpackages --multiversion debian  | gzip > Packages.gzip
-        env:
-          GITHUB_TOKEN: ${{ secrets.TOKEN }}
