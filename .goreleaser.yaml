@@ -1,0 +1,45 @@
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: pitemp
+    ldflags:
+      - -s
+      - -w 
+      - -X main.version={{.Version}}
+      - -X main.gitCommit={{.ShortCommit}}
+    targets:
+      - linux_arm64
+      - linux_arm
+
+archives:
+  - id: pitemp
+    replacements:
+      arm: armhf
+  
+nfpms:
+  - id: pitemp
+    maintainer: "Marko Milivojevic <markom@gmail.com>"
+    description: "Raspberry Pi temperature reporter. See: https://github.com/icemarkom/pitemp"
+    bindir: /usr/local/bin
+    formats:
+      - deb
+    replacements:
+      arm: armhf
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-dev"
+
+changelog:
+  use: github
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+
+announce:
+  skip: "true"
