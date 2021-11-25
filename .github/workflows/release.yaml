@@ -36,6 +36,5 @@ jobs:
         with:
           repo_token: ${{ secrets.TOKEN }}
           file: Packages.gzip
-          asset_name: mything
           tag: ${{ github.ref }}
           overwrite: true
