@@ -31,11 +31,11 @@ jobs:
       - name: Run apt-ftparchive
         working-directory: dist
         run: |
-          apt-ftparchive packages . > ../Packages && \
-          cd .. &&
-          apt-ftparchive release . > ../Release
+          apt-ftparchive packages . > Packages && \
+          apt-ftparchive release . > Release
       - name: Upload Packages and Release manually
-        uses: AButler/upload-release-assets@v2.0
+        uses: alexellis/upload-assets@0.2.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
         with:
-          repo-token: ${{ secrets.TOKEN }}
-          files: "Packages;Release"
+          asset_paths: '[ "./dist/{Packages, Release}" ]'
