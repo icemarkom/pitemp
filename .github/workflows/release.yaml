@@ -37,5 +37,5 @@ jobs:
       - name: Upload Packages and Release manually
         uses: AButler/upload-release-assets@v2.0
         with:
-          repo_token: ${{ secrets.TOKEN }}
+          repo-token: ${{ secrets.TOKEN }}
           files: "Packages;Release"
