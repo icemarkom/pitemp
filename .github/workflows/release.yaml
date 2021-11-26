@@ -38,4 +38,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.TOKEN }}
         with:
-          asset_paths: '[ "./dist/{Packages, Release}" ]'
+          asset_paths: '[ "./dist/Packages", "./dist/Release}" ]'
