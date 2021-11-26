@@ -31,13 +31,11 @@ jobs:
       - name: Run apt-ftparchive
         working-directory: dist
         run: |
-          apt-ftparchive packages . | gzip > ../Packages.gz && \
-          apt-ftparchive release . | gzip > ../Release.gz
+          apt-ftparchive packages . > ../Packages && \
+          cd .. &&
+          apt-ftparchive release . > ../Release
       - name: Upload Packages and Release manually
-        uses: svenstaro/upload-release-action@v2
+        uses: AButler/upload-release-assets@v2.0
         with:
           repo_token: ${{ secrets.TOKEN }}
-          file: "*.gz"
-          file_glob: true
-          tag: ${{ github.ref }}
-          overwrite: true
+          files: "Packages;Release"
