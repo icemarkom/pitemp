@@ -28,11 +28,21 @@ jobs:
           args: release --rm-dist
         env:
           GITHUB_TOKEN: ${{ secrets.TOKEN }}
+      - name: Import GPG key
+        uses: crazy-max/ghaction-import-gpg@v4
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
       - name: Run apt-ftparchive
         working-directory: dist
         run: |
           apt-ftparchive packages . > Packages && \
           apt-ftparchive release . > Release
+      - name: Sign Release
+        working-directory: dist
+        run: |
+          gpg -abs -o Release.gpg Release &&
+          gpg --clearsign -o InRelease Release
       - name: Upload Packages and Release manually
         uses: alexellis/upload-assets@0.2.2
         env:
