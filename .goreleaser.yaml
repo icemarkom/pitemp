@@ -17,6 +17,8 @@ archives:
   - id: pitemp
     replacements:
       arm: armhf
+    files:
+      - LICENSE
   
 nfpms:
   - id: pitemp
