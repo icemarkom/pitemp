@@ -1,3 +1,4 @@
+version: 2
 before:
   hooks:
     - go mod tidy
@@ -11,12 +12,9 @@ builds:
       - -X main.gitCommit={{.ShortCommit}}
     targets:
       - linux_arm64
-      - linux_arm
 
 archives:
   - id: pitemp
-    replacements:
-      arm: armhf
     files:
       - LICENSE
   
@@ -27,8 +25,6 @@ nfpms:
     bindir: /usr/local/bin
     formats:
       - deb
-    replacements:
-      arm: armhf
 
 checksum:
   name_template: 'checksums.txt'
